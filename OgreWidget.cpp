@@ -107,29 +107,55 @@ void OgreWidget::initializeOgre() {
 
     mSceneMgr = mRoot->createSceneManager();
     qDebug()<<"Started ogreWidget initializeOgre createSceneManager";
+
     mSceneMgr->setAmbientLight(Ogre::ColourValue(0.5, 0.5, 0.5));
+
     Ogre::Light* light = mSceneMgr->createLight("MainLight");
-    qDebug()<<"Started ogreWidget initializeOgre MainLight";
     Ogre::SceneNode* lightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
     qDebug()<<"Started ogreWidget initializeOgre createChildSceneNode";
+
     lightNode->setPosition(20, 80, 50);
     lightNode->attachObject(light);
+
     qDebug()<<"Started ogreWidget initializeOgre lightNode";
 
     Ogre::RTShader::ShaderGenerator::initialize();
-
     Ogre::RTShader::ShaderGenerator::getSingleton().addSceneManager(mSceneMgr);
     qDebug()<<"Started ogreWidget initializeOgre addSceneManager";
 
+    // mCamera = mSceneMgr->createCamera("MainCamera");
+    // mCamera->setNearClipDistance(1);
+    // mCamera->setAutoAspectRatio(true);
+
+    mCamNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+    mCamNode->setPosition(0, 0, 80);
+    mCamNode->lookAt(Ogre::Vector3(0, 0, 0), Ogre::Node::TS_WORLD);
+    // mCamNode->attachObject(mCamera);
+
+    qDebug()<<"Started ogreWidget initializeOgre SceneNode ";
+
+
+    //-------------------------------------------------------------
+    // Create the pivot node at the center of the scene (e.g. where Sinbad is)
+    Ogre::SceneNode* pivotNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("CameraPivot");
+
+    // Yaw node for horizontal rotation
+    Ogre::SceneNode* yawNode = pivotNode->createChildSceneNode("CameraYawNode");
+
+    // Pitch node for vertical rotation
+    Ogre::SceneNode* pitchNode = yawNode->createChildSceneNode("CameraPitchNode");
+
+    // Create the camera
     mCamera = mSceneMgr->createCamera("MainCamera");
-    qDebug()<<"Started ogreWidget initializeOgre MainCamera ";
     mCamera->setNearClipDistance(1);
     mCamera->setAutoAspectRatio(true);
-    mCamNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
-    mCamNode->attachObject(mCamera);
-    mCamNode->setPosition(0, 20, 80);
-    mCamNode->lookAt(Ogre::Vector3(0, 0, 0), Ogre::Node::TS_WORLD);
-    qDebug()<<"Started ogreWidget initializeOgre SceneNode ";
+    pitchNode->attachObject(mCamera);
+
+    // Set initial camera position (e.g., back and slightly up)
+    pitchNode->setPosition(0, 0, 80);  // set camera 80 units away from pivot
+    pitchNode->lookAt(Ogre::Vector3(0, 0, 0), Ogre::Node::TS_PARENT);
+
+    //-------------------------------------------------------------
 
     // Register resources
     Ogre::ResourceGroupManager::getSingleton().addResourceLocation(
@@ -152,7 +178,7 @@ void OgreWidget::initializeOgre() {
     // Get animation state
     mAnimationState = ogreHead->getAnimationState("Dance");
     mAnimationState->setLoop(true);
-    mAnimationState->setEnabled(true);
+    mAnimationState->setEnabled(false);
     createGrid(100.0f, 50);
 
 
@@ -185,24 +211,42 @@ void OgreWidget::mouseReleaseEvent(QMouseEvent *event)
 
 void OgreWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    if (mIsLeftButtonPressed) {
-        QPoint delta = event->pos() - mLastMousePos;
-        mLastMousePos = event->pos();
+    static QPoint lastPos;
+    if (event->buttons() & Qt::LeftButton) {
+        QPoint delta = event->pos() - lastPos;
 
-        // Rotate camera node
-        float sensitivity = 0.2f;
-        mCamNode->yaw(Ogre::Degree(-delta.x() * sensitivity), Ogre::Node::TS_WORLD);
-        mCamNode->pitch(Ogre::Degree(-delta.y() * sensitivity), Ogre::Node::TS_LOCAL);
+        float yawAngle = -delta.x() * 0.3f;   // sensitivity
+        float pitchAngle = -delta.y() * 0.3f;
+
+        Ogre::SceneNode* yawNode = mSceneMgr->getSceneNode("CameraYawNode");
+        Ogre::SceneNode* pitchNode = mSceneMgr->getSceneNode("CameraPitchNode");
+
+        yawNode->yaw(Ogre::Degree(yawAngle), Ogre::Node::TS_WORLD);
+        pitchNode->pitch(Ogre::Degree(pitchAngle), Ogre::Node::TS_LOCAL);
     }
+    lastPos = event->pos();
+    // if (mIsLeftButtonPressed) {
+    //     QPoint delta = event->pos() - mLastMousePos;
+    //     mLastMousePos = event->pos();
+
+    //     // Rotate camera node
+    //     float sensitivity = 0.2f;
+    //     mCamNode->yaw(Ogre::Degree(-delta.x() * sensitivity), Ogre::Node::TS_WORLD);
+    //     mCamNode->pitch(Ogre::Degree(-delta.y() * sensitivity), Ogre::Node::TS_LOCAL);
+    // }
 }
 
 void OgreWidget::wheelEvent(QWheelEvent *event)
 {
-    float zoomSpeed = 1.1f;
-    if (event->angleDelta().y() > 0)
-        mCamNode->translate(Ogre::Vector3(0, 0, -zoomSpeed), Ogre::Node::TS_LOCAL);
-    else
-        mCamNode->translate(Ogre::Vector3(0, 0, zoomSpeed), Ogre::Node::TS_LOCAL);
+    Ogre::SceneNode* pitchNode = mSceneMgr->getSceneNode("CameraPitchNode");
+
+    float zoomAmount = event->angleDelta().y() * 0.05f;
+    pitchNode->translate(0, 0, -zoomAmount, Ogre::Node::TS_LOCAL);
+    // float zoomSpeed = 1.1f;
+    // if (event->angleDelta().y() > 0)
+    //     mCamNode->translate(Ogre::Vector3(0, 0, -zoomSpeed), Ogre::Node::TS_LOCAL);
+    // else
+    //     mCamNode->translate(Ogre::Vector3(0, 0, zoomSpeed), Ogre::Node::TS_LOCAL);
 }
 
 void OgreWidget::updateAnimation() {
