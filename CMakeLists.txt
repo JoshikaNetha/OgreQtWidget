@@ -17,11 +17,16 @@ set(CMAKE_PREFIX_PATH "${OGRE_DIR}")
 # The find_package command will look for OGREConfig.cmake in the CMAKE_PREFIX_PATH
 find_package(OGRE REQUIRED COMPONENTS Bites CONFIG)
 
+find_package(urdfdom REQUIRED)
+
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
+)
+include_directories(
+  /usr/include/urdfdom/urdf_parser/
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -49,7 +54,7 @@ else()
     endif()
 endif()
 
-target_link_libraries(OgreTutorials_1 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets OgreBites)
+target_link_libraries(OgreTutorials_1 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets OgreBites urdfdom::urdf_parser)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

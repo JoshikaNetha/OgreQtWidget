@@ -84,5 +84,5 @@ MainWindow::~MainWindow()
 void MainWindow::onAnimateClicked()
 {
     qDebug()<<"MainWindow::onAnimateClicked()";
-    ogreWidget->startSinbadAnimation();
+    // ogreWidget->startSinbadAnimation();
 }

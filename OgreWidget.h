@@ -6,17 +6,25 @@
 #include <QTimer>
 #include <Ogre.h>
 #include <OgreApplicationContext.h>
+
+#include <urdf_model/model.h>
+#include <urdf_parser.h>
+
 class QPlatformNativeInterface;
 class OgreWidget : public QWidget
 {
     Q_OBJECT
 public:
-     OgreWidget(QWidget *parent = nullptr);
+    OgreWidget(QWidget *parent = nullptr);
     ~OgreWidget();
 
-    void startSinbadAnimation();
 
-    void createGrid(float size, int divisions) ;
+
+    void startSinbadAnimation(); // temp for animation
+
+
+    void loadURDF(const std::string& urdfFilePath);
+
 
 protected:
     void resizeEvent(QResizeEvent* evt) override;
@@ -27,22 +35,34 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
 
 private:
-    QPoint mLastMousePos;
-    bool mIsLeftButtonPressed = false;
 
 
-    void initializeOgre();
-    void updateAnimation();
+    void                initializeOgre();
+    void                createGrid(float size, int divisions) ;
 
-    Ogre::Root* mRoot = nullptr;
+    void                visualizeLinkRecursive(urdf::LinkConstSharedPtr link, Ogre::SceneNode* parentNode);
+
+    Ogre::ManualObject* createBoxMesh(Ogre::SceneManager* sceneMgr, const std::string& name, float x, float y, float z);
+    Ogre::Entity*       createPrimitiveEntity(const std::string& type, float size);
+
+    void                generateSphere(Ogre::ManualObject* manual, float radius, int rings = 12, int segments = 12);
+    void                generateBox(Ogre::ManualObject* manual, float x, float y, float z);
+
+
+private:
+    QPoint          mLastMousePos;
+    bool            mIsLeftButtonPressed = false;
+
+    Ogre::Root*         mRoot = nullptr;
     Ogre::SceneManager* mSceneMgr = nullptr;
     Ogre::RenderWindow* mRenderWindow = nullptr;
-    Ogre::Camera* mCamera = nullptr;
-    Ogre::SceneNode* mCamNode = nullptr;
-    QTimer mRenderTimer;
+    Ogre::Camera*       mCamera = nullptr;
+    Ogre::SceneNode*    mCamNode = nullptr;
+    QTimer              mRenderTimer;
 
-    QTimer* mAnimationTimer;
-    Ogre::AnimationState* mAnimationState;
+    // QTimer* mAnimationTimer;  for animation
+    // Ogre::AnimationState* mAnimationState;
+    // void                updateAnimation();
 
 };
 
